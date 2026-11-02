@@ -27,7 +27,10 @@ jobs:
           for f in handler handler.js experiments.js iframe iframe.js links links.js; do
             curl -fsSL "$SRC/__/auth/$f" -o "__/auth/$f" || { echo "no se pudo bajar $f"; rm -f "__/auth/$f"; }
           done
-          curl -fsSL "$SRC/__/firebase/init.json" -o __/firebase/init.json
+          # init.json solo lo sirve Firebase Hosting (no está activado): se arma con la configuración de la app
+          curl -fsSL "$SRC/__/firebase/init.json" -o __/firebase/init.json || cat > __/firebase/init.json <<'JSON'
+          {"apiKey":"AIzaSyDvn-3s0nwKxB_EVT2uyQ-4H_ugUnpbHHk","authDomain":"carlosalzo.github.io","projectId":"bitacora-f99ae","storageBucket":"bitacora-f99ae.firebasestorage.app","messagingSenderId":"227506437762","appId":"1:227506437762:web:ea8f5e1c0e932c8f863e9b"}
+          JSON
           for f in handler handler.js iframe iframe.js; do test -s "__/auth/$f" || { echo "falta $f"; exit 1; }; done
           ls -la __/auth __/firebase
       - name: Guardar cambios
