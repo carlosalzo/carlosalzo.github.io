@@ -1,0 +1,40 @@
+name: Sincronizar archivos de inicio de sesión de Firebase
+
+# Libreta inicia sesión con Google desde este mismo dominio (carlosalzo.github.io),
+# así funciona en iPhone/Safari. Esta tarea copia los archivos auxiliares de
+# Firebase y los mantiene al día. Docs: https://firebase.google.com/docs/auth/web/redirect-best-practices
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/firebase-auth.yml"]
+  schedule:
+    - cron: "17 9 * * 1"   # lunes
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Descargar archivos de Firebase
+        run: |
+          set -e
+          SRC=https://bitacora-f99ae.firebaseapp.com
+          mkdir -p __/auth __/firebase
+          for f in handler handler.js experiments.js iframe iframe.js links links.js; do
+            curl -fsSL "$SRC/__/auth/$f" -o "__/auth/$f" || { echo "no se pudo bajar $f"; rm -f "__/auth/$f"; }
+          done
+          curl -fsSL "$SRC/__/firebase/init.json" -o __/firebase/init.json
+          for f in handler handler.js iframe iframe.js; do test -s "__/auth/$f" || { echo "falta $f"; exit 1; }; done
+          ls -la __/auth __/firebase
+      - name: Guardar cambios
+        run: |
+          git add -A __
+          if git diff --cached --quiet; then echo "Sin cambios"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Actualizar archivos de inicio de sesión de Firebase"
+          git push
